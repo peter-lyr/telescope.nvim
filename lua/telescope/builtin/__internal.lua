@@ -562,15 +562,41 @@ internal.oldfiles = function(opts)
     :find()
 end
 
-internal.command_history = function(opts)
-  local history_string = vim.fn.execute "history cmd"
-  local history_list = vim.split(history_string, "\n")
+local function get_short(content, max)
+  if not max then
+    max = vim.fn.floor(vim.o.columns * 2 / 5)
+  end
+  if #content >= (max * 2 - 1) then
+    local s1 = ''
+    local s2 = ''
+    for i = (max * 2 - 1), 3, -1 do
+      s2 = string.sub(content, #content - i, #content)
+      if vim.fn.strdisplaywidth(s2) <= max then
+        break
+      end
+    end
+    for i = (max * 2 - 1), 3, -1 do
+      s1 = string.sub(content, 1, i)
+      if vim.fn.strdisplaywidth(s1) <= max then
+        break
+      end
+    end
+    return s1 .. '…' .. s2
+  end
+  return content
+end
 
+internal.command_history = function(opts)
   local results = {}
-  for i = #history_list, 3, -1 do
-    local item = history_list[i]
-    local _, finish = string.find(item, "%d+ +")
-    table.insert(results, string.sub(item, finish + 1))
+  Command_history = {}
+  for i = 1, vim.fn.histnr ':' do
+    local cmd = vim.fn.histget(':', i)
+    if #vim.fn.trim(cmd) > 0 then
+      table.insert(Command_history, cmd)
+    end
+  end
+  for _, cmd in ipairs(Command_history) do
+    table.insert(results, get_short(cmd))
   end
 
   pickers
