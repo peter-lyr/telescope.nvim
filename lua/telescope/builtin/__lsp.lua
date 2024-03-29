@@ -24,7 +24,13 @@ lsp.references = function(opts)
 
     local locations = {}
     if result then
-      local results = vim.lsp.util.locations_to_items(result, vim.lsp.get_client_by_id(ctx.client_id).offset_encoding)
+      local cwd = vim.loop.cwd()
+      local results_temp = vim.lsp.util.locations_to_items(result, vim.lsp.get_client_by_id(ctx.client_id).offset_encoding)
+      local results = vim.deepcopy(results_temp)
+      for idx, r in ipairs(results_temp) do
+        local file = r['filename']
+        results[idx]['filename'] = string.sub(file, #cwd + 2, #file)
+      end
       if include_current_line then
         locations = vim.tbl_filter(function(v)
           -- Remove current line from result
