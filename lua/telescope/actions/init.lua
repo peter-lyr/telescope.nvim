@@ -377,6 +377,12 @@ actions.set_command_line = function(prompt_bufnr)
     return
   end
   actions.close(prompt_bufnr)
+  if Command_history then
+    local cmd = Command_history[selection.index]
+    vim.fn.histadd("cmd", cmd)
+    vim.cmd(cmd)
+    return
+  end
   vim.fn.histadd("cmd", selection.value)
   vim.cmd(selection.value)
 end
