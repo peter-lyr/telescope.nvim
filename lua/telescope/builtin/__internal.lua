@@ -588,14 +588,14 @@ end
 
 internal.command_history = function(opts)
   local results = {}
-  Command_history = {}
+  History = {}
   for i = vim.fn.histnr ':', 1, -1 do
     local cmd = vim.fn.histget(':', i)
     if #vim.fn.trim(cmd) > 0 then
-      table.insert(Command_history, cmd)
+      table.insert(History, cmd)
     end
   end
-  for _, cmd in ipairs(Command_history) do
+  for _, cmd in ipairs(History) do
     table.insert(results, get_short(cmd))
   end
 
@@ -622,14 +622,16 @@ internal.command_history = function(opts)
 end
 
 internal.search_history = function(opts)
-  local search_string = vim.fn.execute "history search"
-  local search_list = vim.split(search_string, "\n")
-
   local results = {}
-  for i = #search_list, 3, -1 do
-    local item = search_list[i]
-    local _, finish = string.find(item, "%d+ +")
-    table.insert(results, string.sub(item, finish + 1))
+  History = {}
+  for i = vim.fn.histnr '/', 1, -1 do
+    local search = vim.fn.histget('/', i)
+    if #vim.fn.trim(search) > 0 then
+      table.insert(History, search)
+    end
+  end
+  for _, cmd in ipairs(History) do
+    table.insert(results, get_short(cmd))
   end
 
   pickers
@@ -641,6 +643,9 @@ internal.search_history = function(opts)
       attach_mappings = function(_, map)
         actions.select_default:replace(actions.set_search_line)
         map({ "i", "n" }, "<C-e>", actions.edit_search_line)
+
+        map({ "n" }, "dd", actions.del_search_line)
+        map({ "i", }, "<a-d>", actions.del_search_line)
 
         -- TODO: Find a way to insert the text... it seems hard.
         -- map('i', '<C-i>', actions.insert_value, { expr = true })
