@@ -387,6 +387,17 @@ actions.set_command_line = function(prompt_bufnr)
   vim.cmd(selection.value)
 end
 
+--- Delete selections from the command history
+---@param prompt_bufnr number: The prompt bufnr
+actions.del_command_line = function(prompt_bufnr)
+  local picker = action_state.get_current_picker(prompt_bufnr)
+  local selections = picker:get_multi_selection()
+  for _, selection in ipairs(selections) do
+    vim.fn.histdel('cmd', Command_history[selection.index])
+  end
+  actions.close(prompt_bufnr)
+end
+
 --- Set a value in the search line and don't search for it, making it editable.
 ---@param prompt_bufnr number: The prompt bufnr
 actions.edit_search_line = function(prompt_bufnr)
