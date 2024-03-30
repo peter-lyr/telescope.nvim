@@ -589,7 +589,7 @@ end
 internal.command_history = function(opts)
   local results = {}
   Command_history = {}
-  for i = 1, vim.fn.histnr ':' do
+  for i = vim.fn.histnr ':', 1, -1 do
     local cmd = vim.fn.histget(':', i)
     if #vim.fn.trim(cmd) > 0 then
       table.insert(Command_history, cmd)
