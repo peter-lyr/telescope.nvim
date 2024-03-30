@@ -359,7 +359,7 @@ local set_edit_line = function(prompt_bufnr, fname, prefix, postfix)
     return
   end
   actions.close(prompt_bufnr)
-  a.nvim_feedkeys(prefix .. selection.value .. postfix, "n", true)
+  a.nvim_feedkeys(prefix .. History[selection.index] .. postfix, "n", true)
 end
 
 --- Set a value in the command line and don't run it, making it editable.
@@ -377,8 +377,8 @@ actions.set_command_line = function(prompt_bufnr)
     return
   end
   actions.close(prompt_bufnr)
-  if Command_history then
-    local cmd = Command_history[selection.index]
+  if History then
+    local cmd = History[selection.index]
     vim.fn.histadd("cmd", cmd)
     vim.cmd(cmd)
     return
@@ -393,7 +393,7 @@ actions.del_command_line = function(prompt_bufnr)
   local picker = action_state.get_current_picker(prompt_bufnr)
   local selections = picker:get_multi_selection()
   for _, selection in ipairs(selections) do
-    vim.fn.histdel('cmd', Command_history[selection.index])
+    vim.fn.histdel('cmd', History[selection.index])
   end
   actions.close(prompt_bufnr)
 end
@@ -408,6 +408,17 @@ end
 ---@param prompt_bufnr number: The prompt bufnr
 actions.set_search_line = function(prompt_bufnr)
   set_edit_line(prompt_bufnr, "actions.set_search_line", "/", "<CR>")
+end
+
+--- Delete selections from the search history
+---@param prompt_bufnr number: The prompt bufnr
+actions.del_search_line = function(prompt_bufnr)
+  local picker = action_state.get_current_picker(prompt_bufnr)
+  local selections = picker:get_multi_selection()
+  for _, selection in ipairs(selections) do
+    vim.fn.histdel('search', History[selection.index])
+  end
+  actions.close(prompt_bufnr)
 end
 
 --- Edit a register
