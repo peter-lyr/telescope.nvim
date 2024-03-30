@@ -609,6 +609,9 @@ internal.command_history = function(opts)
         actions.select_default:replace(actions.set_command_line)
         map({ "i", "n" }, "<C-e>", actions.edit_command_line)
 
+        map({ "n" }, "dd", actions.del_command_line)
+        map({ "i", }, "<a-d>", actions.del_command_line)
+
         -- TODO: Find a way to insert the text... it seems hard.
         -- map('i', '<C-i>', actions.insert_value, { expr = true })
 
