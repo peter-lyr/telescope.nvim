@@ -393,8 +393,9 @@ actions.del_command_line = function(prompt_bufnr)
   local picker = action_state.get_current_picker(prompt_bufnr)
   local selections = picker:get_multi_selection()
   for _, selection in ipairs(selections) do
-    vim.fn.histdel('cmd', History[selection.index])
+    vim.fn.histdel('cmd', #History-selection.index+1)
   end
+  vim.cmd 'wshada!'
   actions.close(prompt_bufnr)
 end
 
@@ -416,8 +417,9 @@ actions.del_search_line = function(prompt_bufnr)
   local picker = action_state.get_current_picker(prompt_bufnr)
   local selections = picker:get_multi_selection()
   for _, selection in ipairs(selections) do
-    vim.fn.histdel('search', History[selection.index])
+    vim.fn.histdel('search', #History-selection.index+1)
   end
+  vim.cmd 'wshada!'
   actions.close(prompt_bufnr)
 end
 
