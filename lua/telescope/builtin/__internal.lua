@@ -28,7 +28,7 @@ end
 
 local function rep_backslash_lower(content)
   content = string.gsub(content, '\\', '/')
-  return vim.fn.tolower(rep_backslash(content))
+  return vim.fn.tolower(content)
 end
 
 ---@return boolean
@@ -953,6 +953,7 @@ internal.buffers = function(opts)
 
   local buffers = {}
   local default_selection_idx = 1
+  local start = #vim.loop.cwd() + 2
   for _, bufnr in ipairs(bufnrs) do
     local flag = bufnr == vim.fn.bufnr "" and "%" or (bufnr == vim.fn.bufnr "#" and "#" or " ")
 
@@ -960,10 +961,14 @@ internal.buffers = function(opts)
       default_selection_idx = 2
     end
 
+    local info = vim.fn.getbufinfo(bufnr)[1]
+    local fname = rep_backslash_lower(vim.api.nvim_buf_get_name(bufnr))
+    info['name'] = fname:sub(start, #fname)
+
     local element = {
       bufnr = bufnr,
       flag = flag,
-      info = vim.fn.getbufinfo(bufnr)[1],
+      info = info,
     }
 
     if opts.sort_lastused and (flag == "#" or flag == "%") then
