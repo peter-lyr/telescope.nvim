@@ -26,10 +26,20 @@ local function apply_cwd_only_aliases(opts)
   return opts
 end
 
+local function rep_backslash_lower(content)
+  content = string.gsub(content, '\\', '/')
+  return vim.fn.tolower(rep_backslash(content))
+end
+
 ---@return boolean
 local function buf_in_cwd(bufname, cwd)
-  if cwd:sub(-1) ~= Path.path.sep then
-    cwd = cwd .. Path.path.sep
+  bufname = rep_backslash_lower(bufname)
+  cwd = rep_backslash_lower(cwd)
+  if cwd:sub(-1) ~= '/' then
+    cwd = cwd .. '/'
+  end
+  if bufname:sub(#cwd, #cwd) ~= '/' then
+    return false
   end
   local bufname_prefix = bufname:sub(1, #cwd)
   return bufname_prefix == cwd
