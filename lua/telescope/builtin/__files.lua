@@ -220,6 +220,11 @@ files.grep_string = function(opts)
     :find()
 end
 
+local function system_open()
+  local selection = action_state.get_selected_entry()
+  vim.cmd(string.format('silent !start /b /min cmd /c "start "" "%s""', selection['cwd'] .. '\\' .. selection[1]))
+end
+
 files.find_files = function(opts)
   local find_command = (function()
     if opts.find_command then
@@ -346,6 +351,10 @@ files.find_files = function(opts)
       finder = finders.new_oneshot_job(find_command, opts),
       previewer = conf.file_previewer(opts),
       sorter = conf.file_sorter(opts),
+      attach_mappings = function(_, map)
+        map({ "i", "n" }, "<C-s>", system_open)
+        return true
+      end,
     })
     :find()
 end
