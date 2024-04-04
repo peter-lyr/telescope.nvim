@@ -26,15 +26,15 @@ local function apply_cwd_only_aliases(opts)
   return opts
 end
 
-local function rep_backslash_lower(content)
+local function rep(content)
   content = string.gsub(content, '\\', '/')
   return vim.fn.tolower(content)
 end
 
 ---@return boolean
 local function buf_in_cwd(bufname, cwd)
-  bufname = rep_backslash_lower(bufname)
-  cwd = rep_backslash_lower(cwd)
+  bufname = rep(bufname)
+  cwd = rep(cwd)
   if cwd:sub(-1) ~= '/' then
     cwd = cwd .. '/'
   end
@@ -962,7 +962,10 @@ internal.buffers = function(opts)
     end
 
     local info = vim.fn.getbufinfo(bufnr)[1]
-    local fname = rep_backslash_lower(vim.api.nvim_buf_get_name(bufnr))
+    local fname = rep(vim.api.nvim_buf_get_name(bufnr))
+    if vim.fn['ProjectRootGet'] then
+      start = #rep(vim.fn['ProjectRootGet'](fname)) + 2
+    end
     info['name'] = fname:sub(start, #fname)
 
     local element = {
