@@ -977,7 +977,7 @@ internal.buffers = function(opts)
 
   local buffers = {}
   local default_selection_idx = 1
-  local cwd = vim.loop.cwd()
+  local cwd = rep(vim.loop.cwd())
   local start = #cwd + 2
   for _, bufnr in ipairs(bufnrs) do
     local flag = bufnr == vim.fn.bufnr "" and "%" or (bufnr == vim.fn.bufnr "#" and "#" or " ")
@@ -989,10 +989,12 @@ internal.buffers = function(opts)
     local info = vim.fn.getbufinfo(bufnr)[1]
     local fname = rep(vim.api.nvim_buf_get_name(bufnr))
     if vim.fn['ProjectRootGet'] then
-      cwd = rep(vim.fn['ProjectRootGet'](fname))
-      start = #cwd + 2
+      local temp = rep(vim.fn['ProjectRootGet'](fname))
+      if temp == cwd then
+        info['name'] = fname:sub(start, #fname)
+      end
+      info['name'] = string.gsub(info['name'], '\\', '/')
     end
-    info['name'] = get_short(vim.fn.fnamemodify(cwd, ':t'), 5) .. ': ' .. fname:sub(start, #fname)
 
     local element = {
       bufnr = bufnr,
