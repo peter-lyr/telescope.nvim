@@ -914,6 +914,30 @@ internal.reloader = function(opts)
     :find()
 end
 
+function get_short(content, max)
+  if not max then
+    max = vim.fn.floor(vim.o.columns * 2 / 5)
+  end
+  if #content >= (max * 2 - 1) then
+    local s1 = ''
+    local s2 = ''
+    for i = (max * 2 - 1), 3, -1 do
+      s2 = string.sub(content, #content - i, #content)
+      if vim.fn.strdisplaywidth(s2) <= max then
+        break
+      end
+    end
+    for i = (max * 2 - 1), 3, -1 do
+      s1 = string.sub(content, 1, i)
+      if vim.fn.strdisplaywidth(s1) <= max then
+        break
+      end
+    end
+    return s1 .. '…' .. s2
+  end
+  return content
+end
+
 internal.buffers = function(opts)
   opts = apply_cwd_only_aliases(opts)
 
@@ -953,7 +977,8 @@ internal.buffers = function(opts)
 
   local buffers = {}
   local default_selection_idx = 1
-  local start = #vim.loop.cwd() + 2
+  local cwd = vim.loop.cwd()
+  local start = #cwd + 2
   for _, bufnr in ipairs(bufnrs) do
     local flag = bufnr == vim.fn.bufnr "" and "%" or (bufnr == vim.fn.bufnr "#" and "#" or " ")
 
@@ -964,9 +989,10 @@ internal.buffers = function(opts)
     local info = vim.fn.getbufinfo(bufnr)[1]
     local fname = rep(vim.api.nvim_buf_get_name(bufnr))
     if vim.fn['ProjectRootGet'] then
-      start = #rep(vim.fn['ProjectRootGet'](fname)) + 2
+      cwd = rep(vim.fn['ProjectRootGet'](fname))
+      start = #cwd + 2
     end
-    info['name'] = fname:sub(start, #fname)
+    info['name'] = get_short(vim.fn.fnamemodify(cwd, ':t'), 5) .. ': ' .. fname:sub(start, #fname)
 
     local element = {
       bufnr = bufnr,
