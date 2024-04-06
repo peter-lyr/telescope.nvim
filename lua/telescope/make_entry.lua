@@ -633,15 +633,19 @@ function make_entry.gen_from_buffer(opts)
     -- bufnr_width + modes + icon + 3 spaces + : + lnum
     opts.__prefix = opts.bufnr_width + 4 + icon_width + 3 + 1 + #tostring(entry.lnum)
     local display_bufname = utils.transform_path(opts, entry.filename)
-    local filename = rep(vim.fn.expand(entry.filename))
+    local filename = rep(vim.fn.fnamemodify(entry.filename, ':p'))
     if vim.fn['ProjectRootGet'] then
       local temp = rep(vim.fn['ProjectRootGet'](filename))
-      if string.sub(filename, 1, #temp) == temp then
+      if #temp ~= 0 and string.sub(filename, 1, #temp) == temp and string.sub(filename, #temp + 1, #temp + 1) == '/' then
         filename = rep(string.sub(filename, #temp + 2, #filename))
+        entry.ordinal = entry.bufnr .. " : " .. filename
+        entry.value = filename
+        display_bufname = get_short(vim.fn.fnamemodify(temp, ':t'), 5) .. ': ' .. filename
+      else
+        entry.ordinal = entry.bufnr .. " : " .. filename
+        entry.value = filename
+        display_bufname = filename
       end
-      entry.ordinal = entry.bufnr .. " : " .. filename
-      entry.value = filename
-      display_bufname = get_short(vim.fn.fnamemodify(temp, ':t'), 5) .. ': ' .. filename
     end
     local icon, hl_group = utils.get_devicons(entry.filename, disable_devicons)
 
