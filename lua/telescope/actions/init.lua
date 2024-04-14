@@ -359,7 +359,7 @@ local set_edit_line = function(prompt_bufnr, fname, prefix, postfix)
     return
   end
   actions.close(prompt_bufnr)
-  a.nvim_feedkeys(prefix .. History[selection.index] .. postfix, "n", true)
+  a.nvim_feedkeys(prefix .. History[#History-selection.index+1] .. postfix, "n", true)
 end
 
 --- Set a value in the command line and don't run it, making it editable.
