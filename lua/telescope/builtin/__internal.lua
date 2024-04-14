@@ -601,11 +601,7 @@ internal.command_history = function(opts)
   History = {}
   for i = 1, vim.fn.histnr ':' do
     local cmd = vim.fn.histget(':', i)
-    if #vim.fn.trim(cmd) > 0 then
-      table.insert(History, cmd)
-    end
-  end
-  for _, cmd in ipairs(History) do
+    table.insert(History, cmd)
     table.insert(results, 1, get_short(cmd))
   end
 
