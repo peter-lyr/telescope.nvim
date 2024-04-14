@@ -396,6 +396,7 @@ actions.del_command_line = function(prompt_bufnr)
     vim.fn.histdel('cmd', #History-selection.index+1)
   end
   vim.cmd 'wshada!'
+  vim.cmd 'rshada!'
   actions.close(prompt_bufnr)
   require('telescope.builtin').command_history()
 end
