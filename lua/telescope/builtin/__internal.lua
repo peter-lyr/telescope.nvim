@@ -597,6 +597,15 @@ local function get_short(content, max)
 end
 
 internal.command_history = function(opts)
+  for i = vim.fn.histnr ':', vim.fn.histnr ':' - 10, -1 do
+    local cmd = vim.fn.histget(':', i)
+    if #vim.fn.trim(cmd) == 0 then
+      vim.fn.histdel('cmd', i)
+    end
+  end
+  vim.cmd 'wshada!'
+  vim.cmd 'rshada!'
+
   local results = {}
   History = {}
   for i = 1, vim.fn.histnr ':' do
