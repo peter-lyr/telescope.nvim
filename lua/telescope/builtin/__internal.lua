@@ -624,6 +624,8 @@ internal.command_history = function(opts)
         actions.select_default:replace(actions.set_command_line)
         map({ "i", "n" }, "<C-e>", actions.edit_command_line)
 
+        map({ "i", "n" }, "<C-cr>", actions.edit_command_line_open)
+
         map({ "n" }, "dd", actions.del_command_line)
         map({ "i", }, "<a-d>", actions.del_command_line)
 
