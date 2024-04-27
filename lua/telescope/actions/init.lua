@@ -370,7 +370,16 @@ end
 
 actions.edit_command_line_open = function(prompt_bufnr)
   set_edit_line(prompt_bufnr, "actions.edit_command_line", ":")
+  local selection = action_state.get_selected_entry()
+  if selection == nil then
+    utils.__warn_no_selection(fname)
+    return
+  end
+  local cmd = History[#History-selection.index+1]
   vim.cmd [[call feedkeys("\<cr>")]]
+  if #vim.fn.trim(cmd) > 0 then
+    vim.fn.histadd("cmd", cmd)
+  end
 end
 
 --- Set a value in the command line and run it
