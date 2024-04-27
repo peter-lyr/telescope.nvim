@@ -368,6 +368,11 @@ actions.edit_command_line = function(prompt_bufnr)
   set_edit_line(prompt_bufnr, "actions.edit_command_line", ":")
 end
 
+actions.edit_command_line_open = function(prompt_bufnr)
+  set_edit_line(prompt_bufnr, "actions.edit_command_line", ":")
+  vim.cmd [[call feedkeys("\<cr>")]]
+end
+
 --- Set a value in the command line and run it
 ---@param prompt_bufnr number: The prompt bufnr
 actions.set_command_line = function(prompt_bufnr)
