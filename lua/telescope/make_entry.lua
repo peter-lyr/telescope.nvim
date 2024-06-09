@@ -1372,12 +1372,14 @@ function make_entry.gen_from_git_status(opts)
       return nil
     end
 
+    local f = string.gsub(file, '/', '\\')
+
     return setmetatable({
       value = file,
       status = mod,
       ordinal = entry,
       display = make_display,
-      path = Path:new({ opts.cwd, file }):absolute(),
+      path = Path:new({ f }):absolute(),
     }, opts)
   end
 end
