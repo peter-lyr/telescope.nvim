@@ -352,7 +352,7 @@ files.find_files = function(opts)
       previewer = conf.file_previewer(opts),
       sorter = conf.file_sorter(opts),
       attach_mappings = function(_, map)
-        map({ "i", "n" }, "<C-s>", system_open)
+        map({ "i", "n" }, "<A-s>", system_open)
         return true
       end,
     })
