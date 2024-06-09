@@ -980,6 +980,10 @@ internal.buffers = function(opts)
     table.sort(bufnrs, function(a, b)
       return vim.fn.getbufinfo(a)[1].lastused > vim.fn.getbufinfo(b)[1].lastused
     end)
+  else
+    table.sort(bufnrs, function(a, b)
+      return vim.fn.tolower(vim.fn.getbufinfo(a)[1].name) > vim.fn.tolower(vim.fn.getbufinfo(b)[1].name)
+    end)
   end
 
   local buffers = {}
