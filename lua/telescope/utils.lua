@@ -288,6 +288,11 @@ local calc_result_length = function(truncate_len)
   return type(truncate_len) == "number" and len - truncate_len or len
 end
 
+function rep(content)
+  content = string.gsub(content, '/', '\\')
+  return content
+end
+
 --- Transform path is a util function that formats a path based on path_display
 --- found in `opts` or the default value from config.
 --- It is meant to be used in make_entry to have a uniform interface for
@@ -330,6 +335,8 @@ utils.transform_path = function(opts, path)
         else
           cwd = vim.loop.cwd()
         end
+        cwd = rep(cwd)
+        transformed_path = rep(transformed_path)
         transformed_path = Path:new(transformed_path):make_relative(cwd)
       end
 
