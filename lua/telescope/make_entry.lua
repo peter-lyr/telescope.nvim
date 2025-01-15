@@ -159,6 +159,7 @@ do
     mt_file_entry.display = function(entry)
       local hl_group, icon
       local display, path_style = utils.transform_path(opts, entry.value)
+      local display = utils.transform_path(opts, entry.value)
 
       display, hl_group, icon = utils.transform_devicons(entry.value, display, disable_devicons)
 
@@ -166,6 +167,7 @@ do
         local style = { { { 0, #icon + 1 }, hl_group } }
         style = utils.merge_styles(style, path_style, #icon + 1)
         return display, style
+        return display, { { { 0, #icon }, hl_group } }
       else
         return display, path_style
       end
@@ -338,6 +340,7 @@ do
           local style = { { { 0, #icon }, hl_group } }
           style = utils.merge_styles(style, path_style, #icon + 1)
           return display, style
+          return display, { { { 0, #icon }, hl_group } }
         else
           return display, path_style
         end
@@ -1191,6 +1194,7 @@ function make_entry.gen_from_diagnostics(opts)
     local line_info_text = signs and signs[entry.type] .. " " or ""
     local line_info = {
       opts.disable_coordinates and line_info_text or line_info_text .. pos,
+      (signs and signs[entry.type] .. " " or "") .. pos,
       "DiagnosticSign" .. entry.type,
     }
 
@@ -1372,11 +1376,19 @@ function make_entry.gen_from_git_status(opts)
           return path_style
         end,
       },
+      utils.transform_path(opts, entry.path),
     }
   end
 
   return function(entry)
     if entry == "" then
+      return nil
+    end
+
+    local mod, file = entry:match "^(..) (.+)$"
+    -- Ignore entries that are the PATH in XY ORIG_PATH PATH
+    -- (renamed or copied files)
+    if not mod then
       return nil
     end
 

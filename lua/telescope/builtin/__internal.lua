@@ -26,11 +26,18 @@ local function apply_cwd_only_aliases(opts)
   return opts
 end
 
+function rep(content)
+  content = string.gsub(content, '/', '\\')
+  return content
+end
+
 ---@return boolean
 local function buf_in_cwd(bufname, cwd)
+  bufname = rep(bufname)
   if cwd:sub(-1) ~= Path.path.sep then
     cwd = cwd .. Path.path.sep
   end
+  cwd = rep(cwd)
   local bufname_prefix = bufname:sub(1, #cwd)
   return bufname_prefix == cwd
 end
@@ -109,18 +116,16 @@ internal.builtin = function(opts)
           end
 
           actions.close(prompt_bufnr)
-          vim.schedule(function()
-            if string.match(selection.text, " : ") then
-              -- Call appropriate function from extensions
-              local split_string = vim.split(selection.text, " : ")
-              local ext = split_string[1]
-              local func = split_string[2]
-              require("telescope").extensions[ext][func](picker_opts)
-            else
-              -- Call appropriate telescope builtin
-              require("telescope.builtin")[selection.text](picker_opts)
-            end
-          end)
+          if string.match(selection.text, " : ") then
+            -- Call appropriate function from extensions
+            local split_string = vim.split(selection.text, " : ")
+            local ext = split_string[1]
+            local func = split_string[2]
+            require("telescope").extensions[ext][func](picker_opts)
+          else
+            -- Call appropriate telescope builtin
+            require("telescope.builtin")[selection.text](picker_opts)
+          end
         end)
         return true
       end,
@@ -553,9 +558,6 @@ internal.oldfiles = function(opts)
   end
 
   for _, file in ipairs(vim.v.oldfiles) do
-    if utils.iswin then
-      file = file:gsub("/", "\\")
-    end
     local file_stat = vim.loop.fs_stat(file)
     if file_stat and file_stat.type == "file" and not vim.tbl_contains(results, file) and file ~= current_file then
       table.insert(results, file)
@@ -564,6 +566,7 @@ internal.oldfiles = function(opts)
 
   if opts.cwd_only or opts.cwd then
     local cwd = opts.cwd_only and vim.loop.cwd() or opts.cwd
+    cwd = cwd .. utils.get_separator()
     results = vim.tbl_filter(function(file)
       return buf_in_cwd(file, cwd)
     end, results)
@@ -1090,6 +1093,26 @@ internal.colorscheme = function(opts)
         actions.close(prompt_bufnr)
         vim.cmd.colorscheme(selection.value)
       end)
+      action_set.shift_selection:enhance {
+        post = function()
+          local selection = action_state.get_selected_entry()
+          if selection == nil then
+            utils.__warn_no_selection "builtin.colorscheme"
+            return
+          end
+          need_restore = true
+          if opts.enable_preview then
+            vim.cmd.colorscheme(selection.value)
+          end
+        end,
+      }
+      actions.close:enhance {
+        post = function()
+          if need_restore then
+            vim.cmd.colorscheme(before_color)
+          end
+        end,
+      }
       return true
     end,
     on_complete = {
@@ -1099,9 +1122,8 @@ internal.colorscheme = function(opts)
           utils.__warn_no_selection "builtin.colorscheme"
           return
         end
-        if opts.enable_preview then
-          vim.cmd.colorscheme(selection.value)
-        end
+        need_restore = true
+        vim.cmd.colorscheme(selection.value)
       end,
     },
   })

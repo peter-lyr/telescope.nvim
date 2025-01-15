@@ -44,6 +44,9 @@ git.files = function(opts)
   opts.git_command = vim.F.if_nil(
     opts.git_command,
     git_command({ "-c", "core.quotepath=false", "ls-files", "--exclude-standard", "--cached" }, opts)
+  local git_command = vim.F.if_nil(
+    opts.git_command,
+    { "git", "-c", "core.quotepath=false", "ls-files", "--exclude-standard", "--cached" }
   )
 
   pickers
@@ -53,6 +56,7 @@ git.files = function(opts)
       finder = finders.new_oneshot_job(
         utils.flatten {
           opts.git_command,
+          git_command,
           show_untracked and "--others" or nil,
           recurse_submodules and "--recurse-submodules" or nil,
         },
@@ -100,6 +104,15 @@ git.stash = function(opts)
     .new(opts, {
       prompt_title = "Git Stash",
       finder = finders.new_oneshot_job(opts.git_command, opts),
+      finder = finders.new_oneshot_job(
+        utils.flatten {
+          "git",
+          "--no-pager",
+          "stash",
+          "list",
+        },
+        opts
+      ),
       previewer = previewers.git_stash_diff.new(opts),
       sorter = conf.file_sorter(opts),
       attach_mappings = function()
@@ -201,6 +214,28 @@ git.bcommits = function(opts)
   )
   bcommits_picker(opts, title, finder):find()
 end
+  pickers
+    .new(opts, {
+      prompt_title = "Git BCommits",
+      finder = finders.new_oneshot_job(
+        utils.flatten {
+          git_command,
+          opts.current_file,
+        },
+        opts
+      ),
+      previewer = {
+        previewers.git_commit_diff_to_parent.new(opts),
+        previewers.git_commit_diff_to_head.new(opts),
+        previewers.git_commit_diff_as_was.new(opts),
+        previewers.git_commit_message.new(opts),
+      },
+      sorter = conf.file_sorter(opts),
+      attach_mappings = function()
+        actions.select_default:replace(actions.git_checkout_current_buffer)
+        local transfrom_file = function()
+          return opts.current_file and Path:new(opts.current_file):make_relative(opts.cwd) or ""
+        end
 
 git.bcommits_range = function(opts)
   opts.current_line = (opts.current_file == nil) and get_current_buf_line(opts.winnr) or nil
@@ -378,6 +413,28 @@ git.status = function(opts)
     local git_cmd = git_command(args, opts)
     opts.entry_maker = vim.F.if_nil(opts.entry_maker, make_entry.gen_from_git_status(opts))
     return finders.new_oneshot_job(git_cmd, opts)
+    local expand_dir = vim.F.if_nil(opts.expand_dir, true)
+    local git_cmd = { "git", "status", "-z", "--", "." }
+
+    if expand_dir then
+      table.insert(git_cmd, #git_cmd - 1, "-u")
+    end
+
+    local output = utils.get_os_command_output(git_cmd, opts.cwd)
+
+    if #output == 0 then
+      print "No changes found"
+      utils.notify("builtin.git_status", {
+        msg = "No changes found",
+        level = "WARN",
+      })
+      return
+    end
+
+    return finders.new_table {
+      results = vim.split(output[1], " ", { trimempty = true }),
+      entry_maker = vim.F.if_nil(opts.entry_maker, make_entry.gen_from_git_status(opts)),
+    }
   end
 
   local initial_finder = gen_new_finder()

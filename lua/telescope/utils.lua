@@ -345,6 +345,36 @@ utils.is_uri = function(filename)
   return false
 end
 
+  -- is alpha?
+  if char < 65 or (char > 90 and char < 97) or char > 122 then
+    return false
+  end
+
+  for i = 2, #filename do
+    char = string.byte(filename, i)
+    if char == 58 then -- `:`
+      return i < #filename and string.byte(filename, i + 1) ~= 92 -- `\`
+    elseif
+      not (
+        (char >= 48 and char <= 57) -- 0-9
+        or (char >= 65 and char <= 90) -- A-Z
+        or (char >= 97 and char <= 122) -- a-z
+        or char == 43 -- `+`
+        or char == 46 -- `.`
+        or char == 45 -- `-`
+      )
+    then
+      return false
+    end
+  end
+  return false
+end
+
+function rep(content)
+  content = string.gsub(content, '/', '\\')
+  return content
+end
+
 --- Transform path is a util function that formats a path based on path_display
 --- found in `opts` or the default value from config.
 --- It is meant to be used in make_entry to have a uniform interface for
@@ -362,6 +392,13 @@ utils.transform_path = function(opts, path)
   end
   if utils.is_uri(path) then
     return path, {}
+---@return string: The transformed path ready to be displayed
+utils.transform_path = function(opts, path)
+  if path == nil then
+    return ""
+  end
+  if utils.is_uri(path) then
+    return path
   end
 
   ---@type fun(opts:table, path: string): string, table?
@@ -378,6 +415,43 @@ utils.transform_path = function(opts, path)
   elseif type(path_display) == "table" then
     if vim.tbl_contains(path_display, "tail") or path_display.tail then
       return utils.path_tail(transformed_path), path_style
+      transformed_path = utils.path_tail(transformed_path)
+    elseif vim.tbl_contains(path_display, "smart") or path_display.smart then
+      transformed_path = utils.path_smart(transformed_path)
+    else
+      if not vim.tbl_contains(path_display, "absolute") and not path_display.absolute then
+        local cwd
+        if opts.cwd then
+          cwd = opts.cwd
+          if not vim.in_fast_event() then
+            cwd = utils.path_expand(opts.cwd)
+          end
+        else
+          cwd = vim.loop.cwd()
+        end
+        cwd = rep(cwd)
+        transformed_path = rep(transformed_path)
+        transformed_path = Path:new(transformed_path):make_relative(cwd)
+      end
+
+      if vim.tbl_contains(path_display, "shorten") or path_display["shorten"] ~= nil then
+        if type(path_display["shorten"]) == "table" then
+          local shorten = path_display["shorten"]
+          transformed_path = Path:new(transformed_path):shorten(shorten.len, shorten.exclude)
+        else
+          local length = type(path_display["shorten"]) == "number" and path_display["shorten"]
+          transformed_path = Path:new(transformed_path):shorten(length)
+        end
+      end
+      if vim.tbl_contains(path_display, "truncate") or path_display.truncate then
+        if opts.__length == nil then
+          opts.__length = calc_result_length(path_display.truncate)
+        end
+        if opts.__prefix == nil then
+          opts.__prefix = 0
+        end
+        transformed_path = truncate(transformed_path, opts.__length - opts.__prefix, nil, -1)
+      end
     end
 
     if not vim.tbl_contains(path_display, "absolute") and not path_display.absolute then

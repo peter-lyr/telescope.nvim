@@ -190,6 +190,8 @@ files.live_grep = function(opts)
 end
 
 files.grep_string = function(opts)
+  -- TODO: This should probably check your visual selection as well, if you've got one
+  opts.cwd = opts.cwd and utils.path_expand(opts.cwd) or vim.loop.cwd()
   local vimgrep_arguments = vim.F.if_nil(opts.vimgrep_arguments, conf.vimgrep_arguments)
   if not has_rg_program("grep_string", vimgrep_arguments[1]) then
     return
@@ -231,6 +233,14 @@ files.grep_string = function(opts)
       additional_args,
       search_args,
     }
+  end
+
+  if opts.file_encoding then
+    additional_args[#additional_args + 1] = "--encoding=" .. opts.file_encoding
+  end
+
+  if search == "" then
+    search = { "-v", "--", "^[[:space:]]*$" }
   else
     args = flatten {
       vimgrep_arguments,
@@ -240,6 +250,12 @@ files.grep_string = function(opts)
     }
   end
 
+  local args = flatten {
+    vimgrep_arguments,
+    additional_args,
+    opts.word_match,
+    search,
+  }
   opts.__inverted, opts.__matches = opts_contain_invert(args)
 
   if opts.grep_open_files then
@@ -490,6 +506,16 @@ files.current_buffer_fuzzy_find = function(opts)
   if opts.results_ts_highlight and lang and utils.has_ts_parser(lang) then
     local parser = vim.treesitter.get_parser(opts.bufnr, lang)
     local query = vim.treesitter.query.get(lang, "highlights")
+  local ts_ok, ts_parsers = pcall(require, "nvim-treesitter.parsers")
+  if ts_ok then
+    filetype = ts_parsers.ft_to_lang(filetype)
+  end
+  local _, ts_configs = pcall(require, "nvim-treesitter.configs")
+
+  local parser_ok, parser = pcall(vim.treesitter.get_parser, opts.bufnr, filetype)
+  local get_query = vim.treesitter.query.get or vim.treesitter.get_query
+  local query_ok, query = pcall(get_query, filetype, "highlights")
+  if parser_ok and query_ok and ts_ok and ts_configs.is_enabled("highlight", filetype, opts.bufnr) then
     local root = parser:parse()[1]:root()
 
     local line_highlights = setmetatable({}, {
@@ -502,6 +528,25 @@ files.current_buffer_fuzzy_find = function(opts)
 
     for id, node in query:iter_captures(root, opts.bufnr, 0, -1) do
       local hl = "@" .. query.captures[id]
+    -- update to changes on Neovim master, see https://github.com/neovim/neovim/pull/19931
+    -- TODO(clason): remove when dropping support for Neovim 0.7
+    local get_hl_from_capture = (function()
+      if vim.fn.has "nvim-0.8" == 1 then
+        return function(q, id)
+          return "@" .. q.captures[id]
+        end
+      else
+        local highlighter = vim.treesitter.highlighter.new(parser)
+        local highlighter_query = highlighter:get_query(filetype)
+
+        return function(_, id)
+          return highlighter_query:_get_hl_from_capture(id)
+        end
+      end
+    end)()
+
+    for id, node in query:iter_captures(root, opts.bufnr, 0, -1) do
+      local hl = get_hl_from_capture(query, id)
       if hl and type(hl) ~= "number" then
         local row1, col1, row2, col2 = node:range()
 
@@ -572,9 +617,20 @@ files.current_buffer_fuzzy_find = function(opts)
             vim.api.nvim_win_set_cursor(0, { selection.lnum, first_col })
           end)
         end)
+        action_set.select:enhance {
+          post = function()
+            local selection = action_state.get_selected_entry()
+            if not selection then
+              return
+            end
+
+            vim.api.nvim_win_set_cursor(0, { selection.lnum, 0 })
+          end,
+        }
 
         return true
       end,
+      push_cursor_on_edit = true,
     })
     :find()
 end

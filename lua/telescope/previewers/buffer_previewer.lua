@@ -324,6 +324,64 @@ local scroll_horizontal_fn = function(self, direction)
   if not self.state then
     return
   end
+previewers.file_maker = function(filepath, bufnr, opts)
+  opts = vim.F.if_nil(opts, {})
+  -- TODO(conni2461): here shouldn't be any hardcoded magic numbers ...
+  opts.preview = vim.F.if_nil(opts.preview, {})
+  opts.preview.timeout = vim.F.if_nil(opts.preview.timeout, 250) -- in ms
+  opts.preview.filesize_limit = vim.F.if_nil(opts.preview.filesize_limit, 25) -- in mb
+  opts.preview.msg_bg_fillchar = vim.F.if_nil(opts.preview.msg_bg_fillchar, "╱") -- in mb
+  opts.preview.treesitter = vim.F.if_nil(opts.preview.treesitter, true)
+  if opts.use_ft_detect == nil then
+    opts.use_ft_detect = true
+  end
+  opts.ft = opts.use_ft_detect and pfiletype.detect(filepath)
+  if opts.bufname ~= filepath then
+    if not vim.in_fast_event() then
+      filepath = utils.path_expand(filepath)
+    end
+    if type(opts.preview.filetype_hook) == "function" then
+      if not opts.preview.filetype_hook(filepath, bufnr, opts) then
+        return
+      end
+    end
+    vim.loop.fs_stat(filepath, function(_, stat)
+      if not stat then
+        return
+      end
+      if stat.type == "directory" then
+        pscan.ls_async(filepath, {
+          hidden = true,
+          group_directories_first = true,
+          on_exit = vim.schedule_wrap(function(data, sections)
+            vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, data)
+            colorize_ls(bufnr, data, sections)
+            if opts.callback then
+              opts.callback(bufnr)
+            end
+          end),
+        })
+      else
+        if opts.preview.check_mime_type == true and has_file and opts.ft == "" then
+          -- avoid SIGABRT in buffer previewer happening with utils.get_os_command_output
+          local mime_type = capture(string.format([[file --mime-type -b "%s"]], filepath))
+          if putils.binary_mime_type(mime_type) then
+            if type(opts.preview.mime_hook) == "function" then
+              vim.schedule_wrap(opts.preview.mime_hook)(filepath, bufnr, opts)
+            else
+              vim.schedule_wrap(putils.set_preview_message)(
+                bufnr,
+                opts.winid,
+                "Binary cannot be previewed",
+                opts.preview.msg_bg_fillchar
+              )
+            end
+            return
+          end
+          if mime_type[2] == "json" then
+            opts.ft = "json"
+          end
+        end
 
   local input = direction > 0 and [[zl]] or [[zh]]
   local count = math.abs(direction)
@@ -499,6 +557,7 @@ previewers.cat = defaulter(function(opts)
     end,
 
     define_preview = function(self, entry)
+    define_preview = function(self, entry, status)
       local p = from_entry.path(entry, true, false)
       if p == nil or p == "" then
         return
@@ -562,6 +621,7 @@ previewers.vimgrep = defaulter(function(opts)
     end,
 
     define_preview = function(self, entry)
+    define_preview = function(self, entry, status)
       -- builtin.buffers: bypass path validation for terminal buffers that don't have appropriate path
       local has_buftype = entry.bufnr
           and vim.api.nvim_buf_is_valid(entry.bufnr)
@@ -582,6 +642,7 @@ previewers.vimgrep = defaulter(function(opts)
         -- schedule so that the lines are actually there and can be jumped onto when we call jump_to_line
         vim.schedule(function()
           jump_to_line(self, self.state.bufnr, entry)
+          jump_to_line(self, self.state.bufnr, entry.lnum)
         end)
       else
         conf.buffer_previewer_maker(p, self.state.bufnr, {
@@ -996,6 +1057,7 @@ previewers.git_file_diff = defaulter(function(opts)
       else
         local cmd = git_command({ "--no-pager", "diff", "HEAD", "--", entry.value }, opts)
         putils.job_maker(cmd, self.state.bufnr, {
+        putils.job_maker({ "git", "--no-pager", "diff", "HEAD", "--", entry.value }, self.state.bufnr, {
           value = entry.value,
           bufname = self.state.bufname,
           cwd = opts.cwd,
@@ -1131,6 +1193,19 @@ previewers.highlights = defaulter(function(_)
           -- we need to zz after the highlighting otherwise highlighting doesnt work
           vim.cmd "norm! zz"
         end)
+        pcall(vim.api.nvim_buf_clear_namespace, self.state.bufnr, ns_previewer, 0, -1)
+        vim.cmd "keepjumps norm! gg"
+        vim.fn.search(entry.value .. " ")
+        local lnum = vim.fn.line "."
+        -- That one is actually a match but its better to use it like that then matchadd
+        vim.api.nvim_buf_add_highlight(
+          self.state.bufnr,
+          ns_previewer,
+          "TelescopePreviewMatch",
+          lnum - 1,
+          0,
+          #entry.value
+        )
       end)
     end,
   }

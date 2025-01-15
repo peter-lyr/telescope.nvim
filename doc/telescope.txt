@@ -283,6 +283,18 @@ telescope.setup({opts})                                    *telescope.setup()*
                             not fit. To increase the gap between the path and the edge,
                             set truncate to number `truncate = 3`
         - "filename_first"  shows filenames first and then the directories
+        - "hidden"    hide file names
+        - "tail"      only display the file name, and not the path
+        - "absolute"  display absolute paths
+        - "smart"     remove as much from the path as possible to only show
+                      the difference between the displayed paths.
+                      Warning: The nature of the algorithm might have a negative
+                      performance impact!
+        - "shorten"   only display the first character of each directory in
+                      the path
+        - "truncate"  truncates the start of the path when the whole path will
+                      not fit. To increase the gap between the path and the edge,
+                      set truncate to number `truncate = 3`
 
         You can also specify the number of characters of each directory name
         to keep by setting `path_display.shorten = num`.
@@ -448,6 +460,17 @@ telescope.setup({opts})                                    *telescope.setup()*
                         override the history handling, e.g.,
                         https://github.com/nvim-telescope/telescope-smart-history.nvim,
                         which allows context sensitive (cwd + picker) history.
+          - path:    The path to the telescope history as string.
+                     Default: stdpath("data")/telescope_history
+          - limit:   The amount of entries that will be written in the
+                     history.
+                     Warning: If limit is set to nil it will grow unbound.
+                     Default: 100
+          - handler: A lua function that implements the history.
+                     This is meant as a developer setting for extensions to
+                     override the history handling, e.g.,
+                     https://github.com/nvim-telescope/telescope-smart-history.nvim,
+                     which allows context sensitive (cwd + picker) history.
 
                         Default:
                         require('telescope.actions.history').get_simple_history
@@ -482,6 +505,15 @@ telescope.setup({opts})                                    *telescope.setup()*
                                   the prompt is empty (i.e., no text has been
                                   typed at the time of closing the prompt).
                                   Default: false
+          - num_pickers:      The number of pickers to be cached.
+                              Set to -1 to preserve all pickers of your session.
+                              If passed to a picker, the cached pickers with
+                              indices larger than `cache_picker.num_pickers` will
+                              be cleared.
+                              Default: 1
+          - limit_entries:    The amount of entries that will be saved for each
+                              picker.
+                              Default: 1000
 
 
                                                *telescope.defaults.preview*
@@ -922,34 +954,26 @@ builtin.find_files({opts})                    *telescope.builtin.find_files()*
         {opts} (table)  options to pass to the picker
 
     Options: ~
-        {cwd}                 (string)          root dir to search from
-                                                (default: cwd, use
-                                                utils.buffer_dir() to search
-                                                relative to open buffer)
-        {find_command}        (function|table)  cmd to use for the search. Can
-                                                be a fn(opts) -> tbl (default:
-                                                autodetect)
-        {file_entry_encoding} (string)          encoding of output of
-                                                `find_command`
-        {follow}              (boolean)         if true, follows symlinks
-                                                (i.e. uses `-L` flag for the
-                                                `find` command) (default:
-                                                false)
-        {hidden}              (boolean)         determines whether to show
-                                                hidden files or not (default:
-                                                false)
-        {no_ignore}           (boolean)         show files ignored by
-                                                .gitignore, .ignore, etc.
-                                                (default: false)
-        {no_ignore_parent}    (boolean)         show files ignored by
-                                                .gitignore, .ignore, etc. in
-                                                parent dirs. (default: false)
-        {search_dirs}         (table)           directory/directories/files to
-                                                search
-        {search_file}         (string)          specify a filename to search
-                                                for
-        {file_encoding}       (string)          file encoding for the
-                                                previewer
+        {cwd}              (string)          root dir to search from (default:
+                                             cwd, use utils.buffer_dir() to
+                                             search relative to open buffer)
+        {find_command}     (function|table)  cmd to use for the search. Can be
+                                             a fn(opts) -> tbl (default:
+                                             autodetect)
+        {follow}           (boolean)         if true, follows symlinks (i.e.
+                                             uses `-L` flag for the `find`
+                                             command)
+        {hidden}           (boolean)         determines whether to show hidden
+                                             files or not (default: false)
+        {no_ignore}        (boolean)         show files ignored by .gitignore,
+                                             .ignore, etc. (default: false)
+        {no_ignore_parent} (boolean)         show files ignored by .gitignore,
+                                             .ignore, etc. in parent dirs.
+                                             (default: false)
+        {search_dirs}      (table)           directory/directories/files to
+                                             search
+        {search_file}      (string)          specify a filename to search for
+        {file_encoding}    (string)          file encoding for the previewer
 
 
 builtin.fd()                                          *telescope.builtin.fd()*
@@ -978,6 +1002,14 @@ builtin.treesitter()                          *telescope.builtin.treesitter()*
         {symbol_highlights} (table)         string -> string. Matches symbol
                                             with hl_group
         {file_encoding}     (string)        file encoding for the previewer
+        {show_line}         (boolean)  if true, shows the row:column that the
+                                       result is found at (default: true)
+        {bufnr}             (number)   specify the buffer number where
+                                       treesitter should run. (default:
+                                       current buffer)
+        {symbol_highlights} (table)    string -> string. Matches symbol with
+                                       hl_group
+        {file_encoding}     (string)   file encoding for the previewer
 
 
 builtin.current_buffer_fuzzy_find({opts}) *telescope.builtin.current_buffer_fuzzy_find()*
@@ -993,6 +1025,9 @@ builtin.current_buffer_fuzzy_find({opts}) *telescope.builtin.current_buffer_fuzz
         {results_ts_highlight} (boolean)  highlight result entries with
                                           treesitter (default: true)
         {file_encoding}        (string)   file encoding for the previewer
+        {skip_empty_lines} (boolean)  if true we don't display empty lines
+                                      (default: false)
+        {file_encoding}    (string)   file encoding for the previewer
 
 
 builtin.tags({opts})                                *telescope.builtin.tags()*
@@ -1091,6 +1126,11 @@ builtin.git_commits({opts})                  *telescope.builtin.git_commits()*
                                    (important for submodule) (default: true)
         {git_command}   (table)    command that will be executed.
                                    {"git","log","--pretty=oneline","--abbrev-commit","--","."}
+        {cwd}          (string)   specify the path of the repo
+        {use_git_root} (boolean)  if we should use git root as cwd or the cwd
+                                  (important for submodule) (default: true)
+        {git_command}  (table)    command that will be executed.
+                                  {"git","log","--pretty=oneline","--abbrev-commit","--","."}
 
 
 builtin.git_bcommits({opts})                *telescope.builtin.git_bcommits()*
@@ -1146,6 +1186,8 @@ builtin.git_bcommits_range({opts})    *telescope.builtin.git_bcommits_range()*
                                   the value of `from`)
         {operator}     (boolean)  select lines in operator-pending mode
                                   (default: false)
+        {git_command}  (table)    command that will be executed.
+                                  {"git","log","--pretty=oneline","--abbrev-commit"}
 
 
 builtin.git_branches({opts})                *telescope.builtin.git_branches()*
@@ -1203,6 +1245,14 @@ builtin.git_status({opts})                    *telescope.builtin.git_status()*
                                    git_icon_defaults)
         {expand_dir}    (boolean)  pass flag `-uall` to show files in
                                    untracked directories (default: true)
+        {cwd}          (string)   specify the path of the repo
+        {use_git_root} (boolean)  if we should use git root as cwd or the cwd
+                                  (important for submodule) (default: true)
+        {git_icons}    (table)    string -> string. Matches name with icon
+                                  (see source code, make_entry.lua
+                                  git_icon_defaults)
+        {expand_dir}   (boolean)  pass flag `-uall` to show files in untracked
+                                  directories (default: true)
 
 
 builtin.git_stash({opts})                      *telescope.builtin.git_stash()*
@@ -1475,6 +1525,25 @@ builtin.buffers({opts})                          *telescope.builtin.buffers()*
                                             specified)
         {select_current}        (boolean)   select current buffer (default:
                                             false)
+        {show_all_buffers}      (boolean)  if true, show all buffers,
+                                           including unloaded buffers
+                                           (default: true)
+        {ignore_current_buffer} (boolean)  if true, don't show the current
+                                           buffer in the list (default: false)
+        {only_cwd}              (boolean)  if true, only show buffers in the
+                                           current working directory (default:
+                                           false)
+        {cwd_only}              (boolean)  alias for only_cwd
+        {sort_lastused}         (boolean)  Sorts current and last buffer to
+                                           the top and selects the lastused
+                                           (default: false)
+        {sort_mru}              (boolean)  Sorts all buffers after most recent
+                                           used. Not just the current and last
+                                           one (default: false)
+        {bufnr_width}           (number)   Defines the width of the buffer
+                                           numbers in front of the filenames 
+                                           (default: dynamic)
+        {file_encoding}         (string)   file encoding for the previewer
 
 
 builtin.colorscheme({opts})                  *telescope.builtin.colorscheme()*
@@ -1491,6 +1560,10 @@ builtin.colorscheme({opts})                  *telescope.builtin.colorscheme()*
         {enable_preview}  (boolean)  if true, will preview the selected color
         {ignore_builtins} (boolean)  if true, builtin colorschemes are not
                                      listed
+        {colors}         (table)    a list of additional colorschemes to
+                                    explicitly make available to telescope
+                                    (default: {})
+        {enable_preview} (boolean)  if true, will preview the selected color
 
 
 builtin.marks({opts})                              *telescope.builtin.marks()*
@@ -1630,6 +1703,8 @@ builtin.lsp_incoming_calls({opts})    *telescope.builtin.lsp_incoming_calls()*
         {opts} (table)  options to pass to the picker
 
     Options: ~
+        {fname_width}   (number)   defines the width of the filename section
+                                   (default: 30)
         {show_line}     (boolean)  show results text (default: true)
         {trim_text}     (boolean)  trim results text (default: false)
         {file_encoding} (string)   file encoding for the previewer
@@ -1644,6 +1719,8 @@ builtin.lsp_outgoing_calls({opts})    *telescope.builtin.lsp_outgoing_calls()*
         {opts} (table)  options to pass to the picker
 
     Options: ~
+        {fname_width}   (number)   defines the width of the filename section
+                                   (default: 30)
         {show_line}     (boolean)  show results text (default: true)
         {trim_text}     (boolean)  trim results text (default: false)
         {file_encoding} (string)   file encoding for the previewer
@@ -1666,6 +1743,12 @@ builtin.lsp_definitions({opts})          *telescope.builtin.lsp_definitions()*
         {trim_text}     (boolean)  trim results text (default: false)
         {reuse_win}     (boolean)  jump to existing window if buffer is
                                    already opened (default: false)
+                                   the current file, values: "tab", "split",
+                                   "vsplit", "never"
+        {fname_width}   (number)   defines the width of the filename section
+                                   (default: 30)
+        {show_line}     (boolean)  show results text (default: true)
+        {trim_text}     (boolean)  trim results text (default: false)
         {file_encoding} (string)   file encoding for the previewer
 
 
@@ -1686,6 +1769,12 @@ builtin.lsp_type_definitions({opts}) *telescope.builtin.lsp_type_definitions()*
         {trim_text}     (boolean)  trim results text (default: false)
         {reuse_win}     (boolean)  jump to existing window if buffer is
                                    already opened (default: false)
+                                   the current file, values: "tab", "split",
+                                   "vsplit", "never"
+        {fname_width}   (number)   defines the width of the filename section
+                                   (default: 30)
+        {show_line}     (boolean)  show results text (default: true)
+        {trim_text}     (boolean)  trim results text (default: false)
         {file_encoding} (string)   file encoding for the previewer
 
 
@@ -1706,6 +1795,12 @@ builtin.lsp_implementations({opts})  *telescope.builtin.lsp_implementations()*
         {trim_text}     (boolean)  trim results text (default: false)
         {reuse_win}     (boolean)  jump to existing window if buffer is
                                    already opened (default: false)
+                                   from the current file, values: "tab",
+                                   "split", "vsplit", "never"
+        {fname_width}   (number)   defines the width of the filename section
+                                   (default: 30)
+        {show_line}     (boolean)  show results text (default: true)
+        {trim_text}     (boolean)  trim results text (default: false)
         {file_encoding} (string)   file encoding for the previewer
 
 
@@ -2003,6 +2098,7 @@ ordered from the lowest priority to the highest priority.
       map({"i", "n"}, "<C-r>", function(_prompt_bufnr)
         print "You typed <C-r>"
       end, { desc = "desc for which key"})
+      end)
 
       -- needs to return true if you want to map default_mappings and
       -- false if not

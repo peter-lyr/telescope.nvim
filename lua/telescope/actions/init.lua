@@ -1577,6 +1577,8 @@ actions.double_mouse_click = function(prompt_bufnr)
   return ""
 end
 
+actions.nop = function(_) end
+
 -- ==================================================
 -- Transforms modules and sets the correct metatables.
 -- ==================================================

@@ -118,35 +118,19 @@ lsp.outgoing_calls = function(opts)
   calls(opts, "to")
 end
 
---- convert `item` type back to something we can pass to `vim.lsp.util.jump_to_location`
---- stopgap for pre-nvim 0.10 - after which we can simply use the `user_data`
---- field on the items in `vim.lsp.util.locations_to_items`
----@param item vim.quickfix.entry
----@param offset_encoding string|nil utf-8|utf-16|utf-32
----@return lsp.Location
-local function item_to_location(item, offset_encoding)
-  local line = item.lnum - 1
-  local character = utils.str_byteindex(item.text, item.col, offset_encoding or "utf-16") - 1
-  local uri
-  if utils.is_uri(item.filename) then
-    uri = item.filename
-  else
-    uri = vim.uri_from_fname(item.filename)
-  end
-  return {
-    uri = uri,
-    range = {
-      start = {
-        line = line,
-        character = character,
-      },
-      ["end"] = {
-        line = line,
-        character = character,
-      },
-    },
-  }
-end
+local function list_or_jump(action, title, opts)
+  local params = vim.lsp.util.make_position_params(opts.winnr)
+  vim.lsp.buf_request(opts.bufnr, action, params, function(err, result, ctx, _)
+    if err then
+      vim.api.nvim_err_writeln("Error when executing " .. action .. " : " .. err.message)
+      return
+    end
+    local flattened_results = {}
+    if result then
+      -- textDocument/definition can return Location or Location[]
+      if not utils.islist(result) then
+        flattened_results = { result }
+      end
 
 ---@alias telescope.lsp.list_or_jump_action
 ---| "textDocument/references"
@@ -241,12 +225,12 @@ local function list_or_jump(action, title, funname, params, opts)
         level = "INFO",
       })
       return
-    end
-
-    if #items == 1 and opts.jump_type ~= "never" then
-      local item = items[1]
-      if opts.curr_filepath ~= item.filename then
+    elseif #flattened_results == 1 and opts.jump_type ~= "never" then
+      local current_uri = params.textDocument.uri
+      local target_uri = flattened_results[1].uri or flattened_results[1].targetUri
+      if current_uri ~= target_uri then
         local cmd
+        local file_path = vim.uri_to_fname(target_uri)
         if opts.jump_type == "tab" then
           cmd = "tabedit"
         elseif opts.jump_type == "split" then
@@ -258,7 +242,7 @@ local function list_or_jump(action, title, funname, params, opts)
         end
 
         if cmd then
-          vim.cmd(string.format("%s %s", cmd, item.filename))
+          vim.cmd(string.format("%s %s", cmd, file_path))
         end
       end
 
@@ -482,11 +466,18 @@ lsp.dynamic_workspace_symbols = function(opts)
 end
 
 local function check_capabilities(method, bufnr)
-  --TODO(clason): remove when dropping support for Nvim 0.9
-  local get_clients = vim.fn.has "nvim-0.10" == 1 and vim.lsp.get_clients or vim.lsp.get_active_clients
-  local clients = get_clients { bufnr = bufnr }
+  local clients = (function()
+    if vim.fn.has "nvim-0.10" == 1 then
+      return vim.lsp.get_clients { bufnr = bufnr }
+    elseif vim.lsp.get_active_clients then
+      return vim.lsp.get_active_clients { bufnr = bufnr }
+    else
+      return vim.lsp.buf_get_clients(bufnr)
+    end
+  end)()
 
   for _, client in pairs(clients) do
+    -- we always pass opts, even though older nvim version might not have a second param
     if client.supports_method(method, { bufnr = bufnr }) then
       return true
     end

@@ -317,6 +317,18 @@ append(
                       not fit. To increase the gap between the path and the edge,
                       set truncate to number `truncate = 3`
   - "filename_first"  shows filenames first and then the directories
+  - "hidden"    hide file names
+  - "tail"      only display the file name, and not the path
+  - "absolute"  display absolute paths
+  - "smart"     remove as much from the path as possible to only show
+                the difference between the displayed paths.
+                Warning: The nature of the algorithm might have a negative
+                performance impact!
+  - "shorten"   only display the first character of each directory in
+                the path
+  - "truncate"  truncates the start of the path when the whole path will
+                not fit. To increase the gap between the path and the edge,
+                set truncate to number `truncate = 3`
 
   You can also specify the number of characters of each directory name
   to keep by setting `path_display.shorten = num`.
@@ -552,6 +564,17 @@ append(
                   override the history handling, e.g.,
                   https://github.com/nvim-telescope/telescope-smart-history.nvim,
                   which allows context sensitive (cwd + picker) history.
+    - path:    The path to the telescope history as string.
+               Default: stdpath("data")/telescope_history
+    - limit:   The amount of entries that will be written in the
+               history.
+               Warning: If limit is set to nil it will grow unbound.
+               Default: 100
+    - handler: A lua function that implements the history.
+               This is meant as a developer setting for extensions to
+               override the history handling, e.g.,
+               https://github.com/nvim-telescope/telescope-smart-history.nvim,
+               which allows context sensitive (cwd + picker) history.
 
                   Default:
                   require('telescope.actions.history').get_simple_history
@@ -593,6 +616,15 @@ append(
                               the prompt is empty (i.e., no text has been
                               typed at the time of closing the prompt).
                               Default: false
+      - num_pickers:      The number of pickers to be cached.
+                          Set to -1 to preserve all pickers of your session.
+                          If passed to a picker, the cached pickers with
+                          indices larger than `cache_picker.num_pickers` will
+                          be cleared.
+                          Default: 1
+      - limit_entries:    The amount of entries that will be saved for each
+                          picker.
+                          Default: 1000
     ]]
 )
 

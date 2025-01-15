@@ -193,6 +193,8 @@ builtin.git_bcommits = require_on_exported_call("telescope.builtin.__git").bcomm
 ---@field to number: the last line number in the range (default: the value of `from`)
 ---@field operator boolean: select lines in operator-pending mode (default: false)
 builtin.git_bcommits_range = require_on_exported_call("telescope.builtin.__git").bcommits_range
+---@field git_command table: command that will be executed. {"git","log","--pretty=oneline","--abbrev-commit"}
+builtin.git_bcommits = require_on_exported_call("telescope.builtin.__git").bcommits
 
 --- List branches for current directory, with output from `git log --oneline` shown in the preview window
 --- - Default keymaps:
@@ -450,6 +452,10 @@ builtin.lsp_outgoing_calls = require_on_exported_call("telescope.builtin.__lsp")
 ---@field show_line boolean: show results text (default: true)
 ---@field trim_text boolean: trim results text (default: false)
 ---@field reuse_win boolean: jump to existing window if buffer is already opened (default: false)
+---@field jump_type string: how to goto definition if there is only one and the definition file is different from the current file, values: "tab", "split", "vsplit", "never"
+---@field fname_width number: defines the width of the filename section (default: 30)
+---@field show_line boolean: show results text (default: true)
+---@field trim_text boolean: trim results text (default: false)
 ---@field file_encoding string: file encoding for the previewer
 builtin.lsp_definitions = require_on_exported_call("telescope.builtin.__lsp").definitions
 
@@ -460,6 +466,10 @@ builtin.lsp_definitions = require_on_exported_call("telescope.builtin.__lsp").de
 ---@field show_line boolean: show results text (default: true)
 ---@field trim_text boolean: trim results text (default: false)
 ---@field reuse_win boolean: jump to existing window if buffer is already opened (default: false)
+---@field jump_type string: how to goto definition if there is only one and the definition file is different from the current file, values: "tab", "split", "vsplit", "never"
+---@field fname_width number: defines the width of the filename section (default: 30)
+---@field show_line boolean: show results text (default: true)
+---@field trim_text boolean: trim results text (default: false)
 ---@field file_encoding string: file encoding for the previewer
 builtin.lsp_type_definitions = require_on_exported_call("telescope.builtin.__lsp").type_definitions
 
@@ -469,6 +479,10 @@ builtin.lsp_type_definitions = require_on_exported_call("telescope.builtin.__lsp
 ---@field show_line boolean: show results text (default: true)
 ---@field trim_text boolean: trim results text (default: false)
 ---@field reuse_win boolean: jump to existing window if buffer is already opened (default: false)
+---@field jump_type string: how to goto implementation if there is only one and the definition file is different from the current file, values: "tab", "split", "vsplit", "never"
+---@field fname_width number: defines the width of the filename section (default: 30)
+---@field show_line boolean: show results text (default: true)
+---@field trim_text boolean: trim results text (default: false)
 ---@field file_encoding string: file encoding for the previewer
 builtin.lsp_implementations = require_on_exported_call("telescope.builtin.__lsp").implementations
 

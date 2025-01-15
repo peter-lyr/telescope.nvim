@@ -114,6 +114,7 @@
 ---       map({"i", "n"}, "<C-r>", function(_prompt_bufnr)
 ---         print "You typed <C-r>"
 ---       end, { desc = "desc for which key"})
+---       end)
 ---
 ---       -- needs to return true if you want to map default_mappings and
 ---       -- false if not
@@ -183,6 +184,10 @@ mappings.default_mappings = config.values.default_mappings
       -- disable c-j because we dont want to allow new lines #2123
       ["<C-j>"] = actions.nop,
     },
+
+      -- disable c-j because we dont want to allow new lines #2123
+      ["<C-j>"] = actions.nop,
+    },
     n = {
       ["<LeftMouse>"] = {
         actions.mouse_click,
@@ -245,6 +250,10 @@ local get_desc_for_keyfunc = function(key_func, opts)
   if type(key_func) == "table" then
     local name = ""
     for _, action in ipairs(key_func) do
+local get_desc_for_keyfunc = function(v)
+  if type(v) == "table" then
+    local name = ""
+    for _, action in ipairs(v) do
       if type(action) == "string" then
         name = name == "" and action or name .. " + " .. action
       end
@@ -252,6 +261,8 @@ local get_desc_for_keyfunc = function(key_func, opts)
     return "telescope|" .. name
   elseif type(key_func) == "function" then
     local info = debug.getinfo(key_func)
+  elseif type(v) == "function" then
+    local info = debug.getinfo(v)
     return "telescopej|" .. vim.json.encode { source = info.source, linedefined = info.linedefined }
   end
 end
@@ -294,6 +305,7 @@ local telescope_map = function(prompt_bufnr, mode, key_bind, key_func, opts)
     vim.api.nvim_exec_autocmds("User", { pattern = "TelescopeKeymap" })
     return ret
   end, vim.tbl_extend("force", opts, { buffer = prompt_bufnr, desc = get_desc_for_keyfunc(key_func, opts) }))
+  end, vim.tbl_extend("force", opts, { buffer = prompt_bufnr, desc = get_desc_for_keyfunc(key_func) }))
 end
 
 local extract_keymap_opts = function(key_func)

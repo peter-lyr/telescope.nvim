@@ -70,6 +70,7 @@ wiki.
 - [sharkdp/fd](https://github.com/sharkdp/fd) (finder)
 - [nvim-treesitter/nvim-treesitter](https://github.com/nvim-treesitter/nvim-treesitter) (finder/preview)
 - [neovim LSP](https://neovim.io/doc/user/lsp.html) (picker)
+- [neovim LSP]( https://neovim.io/doc/user/lsp.html) (picker)
 - [devicons](https://github.com/nvim-tree/nvim-web-devicons) (icons)
 
 ### Installation
@@ -86,6 +87,7 @@ Using [vim-plug](https://github.com/junegunn/vim-plug)
 ```viml
 Plug 'nvim-lua/plenary.nvim'
 Plug 'nvim-telescope/telescope.nvim', { 'tag': '0.1.8' }
+Plug 'nvim-telescope/telescope.nvim', { 'tag': '0.1.1' }
 " or                                , { 'branch': '0.1.x' }
 ```
 
@@ -94,6 +96,7 @@ Using [dein](https://github.com/Shougo/dein.vim)
 ```viml
 call dein#add('nvim-lua/plenary.nvim')
 call dein#add('nvim-telescope/telescope.nvim', { 'rev': '0.1.8' })
+call dein#add('nvim-telescope/telescope.nvim', { 'rev': '0.1.1' })
 " or                                         , { 'rev': '0.1.x' })
 ```
 
@@ -102,6 +105,7 @@ Using [packer.nvim](https://github.com/wbthomason/packer.nvim)
 ```lua
 use {
   'nvim-telescope/telescope.nvim', tag = '0.1.8',
+  'nvim-telescope/telescope.nvim', tag = '0.1.1',
 -- or                            , branch = '0.1.x',
   requires = { {'nvim-lua/plenary.nvim'} }
 }
@@ -113,6 +117,7 @@ Using [lazy.nvim](https://github.com/folke/lazy.nvim)
 -- init.lua:
     {
     'nvim-telescope/telescope.nvim', tag = '0.1.8',
+    'nvim-telescope/telescope.nvim', tag = '0.1.1',
 -- or                              , branch = '0.1.x',
       dependencies = { 'nvim-lua/plenary.nvim' }
     }
@@ -120,6 +125,7 @@ Using [lazy.nvim](https://github.com/folke/lazy.nvim)
 -- plugins/telescope.lua:
 return {
     'nvim-telescope/telescope.nvim', tag = '0.1.8',
+    'nvim-telescope/telescope.nvim', tag = '0.1.1',
 -- or                              , branch = '0.1.x',
       dependencies = { 'nvim-lua/plenary.nvim' }
     }
@@ -162,6 +168,10 @@ vim.keymap.set('n', '<leader>ff', builtin.find_files, { desc = 'Telescope find f
 vim.keymap.set('n', '<leader>fg', builtin.live_grep, { desc = 'Telescope live grep' })
 vim.keymap.set('n', '<leader>fb', builtin.buffers, { desc = 'Telescope buffers' })
 vim.keymap.set('n', '<leader>fh', builtin.help_tags, { desc = 'Telescope help tags' })
+vim.keymap.set('n', '<leader>ff', builtin.find_files, {})
+vim.keymap.set('n', '<leader>fg', builtin.live_grep, {})
+vim.keymap.set('n', '<leader>fb', builtin.buffers, {})
+vim.keymap.set('n', '<leader>fh', builtin.help_tags, {})
 ```
 
 See [builtin pickers](#pickers) for a list of all builtin functions.
@@ -266,6 +276,28 @@ Many familiar mapping patterns are set up as defaults.
 | `<C-r><C-a>`   | Insert cWORD in original window into prompt (insert mode) |
 | `<C-r><C-f>`   | Insert cfile in original window into prompt (insert mode) |
 | `<C-r><C-l>`   | Insert cline in original window into prompt (insert mode) |
+| Mappings       | Action                                               |
+|----------------|------------------------------------------------------|
+| `<C-n>/<Down>` | Next item                                            |
+| `<C-p>/<Up>`   | Previous item                                        |
+| `j/k`          | Next/previous (in normal mode)                       |
+| `H/M/L`        | Select High/Middle/Low (in normal mode)              |
+| `gg/G`         | Select the first/last item (in normal mode)          |
+| `<CR>`         | Confirm selection                                    |
+| `<C-x>`        | Go to file selection as a split                      |
+| `<C-v>`        | Go to file selection as a vsplit                     |
+| `<C-t>`        | Go to a file in a new tab                            |
+| `<C-u>`        | Scroll up in preview window                          |
+| `<C-d>`        | Scroll down in preview window                        |
+| `<C-/>`        | Show mappings for picker actions (insert mode)       |
+| `?`            | Show mappings for picker actions (normal mode)       |
+| `<C-c>`        | Close telescope (insert mode)                        |
+| `<Esc>`        | Close telescope (in normal mode)                     |
+| `<Tab>`        | Toggle selection and move to next selection          |
+| `<S-Tab>`      | Toggle selection and move to prev selection          |
+| `<C-q>`        | Send all items not filtered to quickfixlist (qflist) |
+| `<M-q>`        | Send all selected items to qflist                    |
+
 
 To see the full list of mappings, check out `lua/telescope/mappings.lua` and the
 `default_mappings` table.
@@ -313,6 +345,12 @@ Built-in functions. Ready to be bound to any key you like.
 | `builtin.git_files`   | Fuzzy search through the output of `git ls-files` command, respects .gitignore                                                                                           |
 | `builtin.grep_string` | Searches for the string under your cursor or selection in your current working directory                                                                                 |
 | `builtin.live_grep`   | Search for a string in your current working directory and get results live as you type, respects .gitignore. (Requires [ripgrep](https://github.com/BurntSushi/ripgrep)) |
+| Functions                           | Description                                                                                                                                                              |
+|-------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `builtin.find_files`                | Lists files in your current working directory, respects .gitignore                                                                                                       |
+| `builtin.git_files`                 | Fuzzy search through the output of `git ls-files` command, respects .gitignore                                                                                           |
+| `builtin.grep_string`               | Searches for the string under your cursor in your current working directory                                                                                              |
+| `builtin.live_grep`                 | Search for a string in your current working directory and get results live as you type, respects .gitignore. (Requires [ripgrep](https://github.com/BurntSushi/ripgrep)) |
 
 ### Vim Pickers
 
@@ -369,6 +407,13 @@ Built-in functions. Ready to be bound to any key you like.
 | `builtin.git_branches`       | Lists all branches with log preview, checkout action `<cr>`, track action `<C-t>`, rebase action`<C-r>`, create action `<C-a>`, switch action `<C-s>`, delete action `<C-d>` and merge action `<C-y>` |
 | `builtin.git_status`         | Lists current changes per file with diff preview and add action. (Multi-selection still WIP)                                                                                                          |
 | `builtin.git_stash`          | Lists stash items in current repository with ability to apply them on `<cr>`                                                                                                                          |
+| Functions                           | Description                                                                                                |
+|-------------------------------------|------------------------------------------------------------------------------------------------------------|
+| `builtin.git_commits`               | Lists git commits with diff preview, checkout action `<cr>`, reset mixed `<C-r>m`, reset soft `<C-r>s` and reset hard `<C-r>h` |
+| `builtin.git_bcommits`              | Lists buffer's git commits with diff preview and checks them out on `<cr>`                                 |
+| `builtin.git_branches`              | Lists all branches with log preview, checkout action `<cr>`, track action `<C-t>`, rebase action`<C-r>`, create action `<C-a>`, switch action `<C-s>`, delete action `<C-d>` and merge action `<C-y>` |
+| `builtin.git_status`                | Lists current changes per file with diff preview and add action. (Multi-selection still WIP)               |
+| `builtin.git_stash`                 | Lists stash items in current repository with ability to apply them on `<cr>`                               |
 
 ### Treesitter Picker
 
